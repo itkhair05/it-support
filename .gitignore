@@ -1,0 +1,50 @@
+# ==========================================
+# HELPDESK IT - .gitignore
+# ==========================================
+
+# ===== BACKEND (Go) =====
+# Compiled binaries
+server/server.exe
+server/*.exe
+server/*.out
+
+# SQLite database files (chứa dữ liệu thật - không push lên git)
+server/helpdesk.db
+server/helpdesk.db-shm
+server/helpdesk.db-wal
+
+# User-uploaded files (không push dữ liệu người dùng)
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Go test cache
+server/vendor/
+
+# ===== FRONTEND (React/Node) =====
+# Dependencies
+client/node_modules/
+
+# Build output (không cần - build lại được)
+client/dist/
+
+# ===== ENVIRONMENT & SECRETS =====
+.env
+.env.local
+.env.*.local
+*.env
+
+# ===== OS FILES =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== IDE FILES =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== LOGS =====
+*.log
+logs/
