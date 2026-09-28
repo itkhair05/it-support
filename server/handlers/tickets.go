@@ -282,12 +282,13 @@ func GetTicketDetailHandler(w http.ResponseWriter, r *http.Request) {
 	var resolvedAtVal interface{}
 
 	err = db.DB.QueryRow(`
-		SELECT 
+		SELECT
 			t.id, t.code, t.title, t.description, t.category_id, COALESCE(c.name, 'Chưa phân loại'),
 			t.priority, t.status, t.reporter_id, COALESCE(u_rep.full_name, 'Người dùng'),
 			t.assignee_id, COALESCE(u_ass.full_name, ''),
 			t.department_id, COALESCE(d.name, ''),
-			t.deadline, t.created_at, t.updated_at, t.resolved_at
+			t.deadline, t.created_at, t.updated_at, t.resolved_at,
+			COALESCE(t.rating, 0), COALESCE(t.rating_comment, '')
 		FROM tickets t
 		LEFT JOIN categories c ON t.category_id = c.id
 		LEFT JOIN users u_rep ON t.reporter_id = u_rep.id
@@ -299,6 +300,7 @@ func GetTicketDetailHandler(w http.ResponseWriter, r *http.Request) {
 		&assigneeID, &t.AssigneeName,
 		&deptID, &t.DepartmentName,
 		&deadlineVal, &createdAtVal, &updatedAtVal, &resolvedAtVal,
+		&t.Rating, &t.RatingComment,
 	)
 
 	if err != nil {

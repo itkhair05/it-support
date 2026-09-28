@@ -37,6 +37,11 @@ export function TicketDetailPage({ ticketId, onBack }) {
   // File upload inline
   const [uploading, setUploading] = useState(false);
 
+  // Rating (reporter only, after resolution)
+  const [rating, setRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [submittingRating, setSubmittingRating] = useState(false);
+
   useEffect(() => {
     loadTicketDetails();
   }, [ticketId]);
@@ -168,6 +173,22 @@ export function TicketDetailPage({ ticketId, onBack }) {
       alert(err.message || 'Lỗi đính kèm file');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleSubmitRating = async () => {
+    if (rating < 1) return;
+    setSubmittingRating(true);
+    try {
+      await api.rateTicket(ticketId, {
+        rating,
+        rating_comment: ratingComment,
+      });
+      loadTicketDetails();
+    } catch (err) {
+      alert(err.message || 'Lỗi gửi đánh giá');
+    } finally {
+      setSubmittingRating(false);
     }
   };
 
@@ -342,6 +363,59 @@ export function TicketDetailPage({ ticketId, onBack }) {
           </div>
         </div>
       </div>
+
+      {/* Rating Card: reporter rates resolved work; others see the result */}
+      {ticket.rating > 0 ? (
+        <div className="card" style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>⭐ Đánh giá chất lượng hỗ trợ IT</h4>
+              <div style={{ fontSize: '1.3rem', color: '#f59e0b', letterSpacing: '0.15rem' }}>
+                {'★'.repeat(ticket.rating)}{'☆'.repeat(5 - ticket.rating)}
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem', letterSpacing: 'normal' }}>
+                  {ticket.rating}/5 từ {ticket.reporter_name}
+                </span>
+              </div>
+            </div>
+            {ticket.rating_comment && (
+              <div style={{ flex: 1, minWidth: '220px', fontSize: '0.85rem', color: 'var(--text-main)', fontStyle: 'italic', borderLeft: '3px solid #f59e0b', paddingLeft: '0.75rem' }}>
+                "{ticket.rating_comment}"
+              </div>
+            )}
+          </div>
+        </div>
+      ) : isReporter && (ticket.status === 'resolved' || ticket.status === 'closed') && (
+        <div className="card" style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
+          <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>
+            ⭐ Đánh giá chất lượng hỗ trợ IT của bạn thế nào?
+          </h4>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <div style={{ fontSize: '1.8rem', cursor: 'pointer', userSelect: 'none', color: '#f59e0b', letterSpacing: '0.15rem' }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span
+                  key={star}
+                  onClick={() => setRating(star)}
+                  style={{ color: star <= rating ? '#f59e0b' : '#d1d5db', transition: 'color 0.15s' }}
+                  title={`${star} sao`}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Nhận xét thêm (tùy chọn)..."
+              value={ratingComment}
+              onChange={(e) => setRatingComment(e.target.value)}
+              style={{ flex: 1, minWidth: '200px', padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
+            />
+            <button onClick={handleSubmitRating} className="btn btn-primary btn-sm" disabled={submittingRating || rating < 1}>
+              {submittingRating ? 'Đang gửi...' : 'Gửi đánh giá'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tabs Menu: Discussion vs Activity Log */}
       <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
