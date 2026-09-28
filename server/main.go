@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"helpdesk-server/db"
 	"helpdesk-server/handlers"
@@ -47,10 +48,16 @@ func main() {
 	mux.HandleFunc("/api/auth/login", handlers.LoginHandler)
 	mux.HandleFunc("/api/auth/register", handlers.RegisterHandler)
 
-	// Static Files (Uploaded files)
+	// Static Files (Uploaded files) - authentication required, no directory listing
 	os.MkdirAll("uploads", 0755)
-	fileServer := http.FileServer(http.Dir("uploads"))
-	mux.Handle("/uploads/", http.StripPrefix("/uploads/", fileServer))
+	uploadsHandler := http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads")))
+	mux.Handle("/uploads/", middleware.AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
+		uploadsHandler.ServeHTTP(w, r)
+	}))
 
 	// Protected Routes (Require Token)
 	// Profile & Auth

@@ -401,7 +401,7 @@ export function TicketDetailPage({ ticketId, onBack }) {
                   {ticket.attachments.map((att) => (
                     <a
                       key={att.id}
-                      href={att.file_path}
+                      href={`${att.file_path}?token=${localStorage.getItem('helpdesk_token')}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="card"
