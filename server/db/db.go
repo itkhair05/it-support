@@ -148,6 +148,8 @@ func createTables() {
 	// Safe migrations
 	DB.Exec("ALTER TABLE tickets ADD COLUMN asset_id INTEGER")
 	DB.Exec("ALTER TABLE comments ADD COLUMN is_internal BOOLEAN DEFAULT 0")
+	DB.Exec("ALTER TABLE tickets ADD COLUMN rating INTEGER DEFAULT 0")
+	DB.Exec("ALTER TABLE tickets ADD COLUMN rating_comment TEXT DEFAULT ''")
 }
 
 func seedData() {
