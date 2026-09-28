@@ -81,65 +81,80 @@ type WSEvent struct {
 	Payload interface{} `json:"payload"`
 }
 
-func (h *Hub) SendToUser(userID int64, event string, payload interface{}) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
+// dropDead routes unresponsive clients through the unregister channel so the
+// Run loop removes them while holding the write lock. Mutating the maps here
+// would race with Run and closing Send twice would panic.
+func (h *Hub) dropDead(dead []*Client) {
+	for _, c := range dead {
+		select {
+		case h.unregister <- c:
+		default:
+		}
+	}
+}
 
+func (h *Hub) SendToUser(userID int64, event string, payload interface{}) {
 	msg, err := json.Marshal(WSEvent{Event: event, Payload: payload})
 	if err != nil {
 		return
 	}
 
+	h.mu.RLock()
+	var dead []*Client
 	if clients, ok := h.userMap[userID]; ok {
 		for _, c := range clients {
 			select {
 			case c.Send <- msg:
 			default:
-				close(c.Send)
-				delete(h.clients, c)
+				dead = append(dead, c)
 			}
 		}
 	}
+	h.mu.RUnlock()
+
+	h.dropDead(dead)
 }
 
 func (h *Hub) SendToRole(role string, event string, payload interface{}) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
 	msg, err := json.Marshal(WSEvent{Event: event, Payload: payload})
 	if err != nil {
 		return
 	}
 
+	h.mu.RLock()
+	var dead []*Client
 	for c := range h.clients {
 		if c.Role == role {
 			select {
 			case c.Send <- msg:
 			default:
-				close(c.Send)
-				delete(h.clients, c)
+				dead = append(dead, c)
 			}
 		}
 	}
+	h.mu.RUnlock()
+
+	h.dropDead(dead)
 }
 
 func (h *Hub) BroadcastAll(event string, payload interface{}) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
 	msg, err := json.Marshal(WSEvent{Event: event, Payload: payload})
 	if err != nil {
 		return
 	}
 
+	h.mu.RLock()
+	var dead []*Client
 	for c := range h.clients {
 		select {
 		case c.Send <- msg:
 		default:
-			close(c.Send)
-			delete(h.clients, c)
+			dead = append(dead, c)
 		}
 	}
+	h.mu.RUnlock()
+
+	h.dropDead(dead)
 }
 
 func ServeWS(hub *Hub, w http.ResponseWriter, r *http.Request, userID int64, role string) {
