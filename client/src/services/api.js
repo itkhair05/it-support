@@ -74,7 +74,7 @@ export const api = {
   getUsers: (role = '') => request(`/users${role ? '?role=' + role : ''}`),
   createUser: (data) => request('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
   toggleUserStatus: (id) => request(`/admin/users/${id}/toggle-status`, { method: 'POST' }),
-  resetUserPassword: (id, new_password) => request(`/admin/users/${id}/reset-password`, { method: 'POST', body: JSON.stringify({ new_password }) }),
+  resetUserPassword: (id) => request(`/admin/users/${id}/reset-password`, { method: 'POST' }),
 
   // Stats & Notifications
   getStats: () => request('/stats'),

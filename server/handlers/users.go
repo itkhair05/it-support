@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"crypto/rand"
 	"encoding/json"
+	"math/big"
 	"net/http"
 	"strconv"
 	"strings"
@@ -137,6 +139,22 @@ func AdminToggleUserStatusHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// generateTempPassword returns a random password from an unambiguous
+// character set. It is shown to the admin once and the user should change
+// it after signing in.
+func generateTempPassword(length int) string {
+	const charset = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	b := make([]byte, length)
+	for i := range b {
+		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			idx = big.NewInt(0)
+		}
+		b[i] = charset[idx.Int64()]
+	}
+	return string(b)
+}
+
 func AdminResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	userID := extractUserIDFromAdminPath(r)
 	if userID <= 0 {
@@ -144,21 +162,24 @@ func AdminResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req struct {
-		NewPassword string `json:"new_password"`
+	newPassword := generateTempPassword(10)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		RespondError(w, http.StatusInternalServerError, "Lỗi mã hóa mật khẩu")
+		return
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.NewPassword == "" {
-		req.NewPassword = "123456" // Default fallback reset password
-	}
-
-	hashed, _ := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
-	_, err := db.DB.Exec("UPDATE users SET password_hash = ? WHERE id = ?", string(hashed), userID)
+	res, err := db.DB.Exec("UPDATE users SET password_hash = ? WHERE id = ?", string(hashed), userID)
 	if err != nil {
 		RespondError(w, http.StatusInternalServerError, "Lỗi đặt lại mật khẩu")
 		return
 	}
+	if affected, _ := res.RowsAffected(); affected == 0 {
+		RespondError(w, http.StatusNotFound, "Không tìm thấy người dùng trong CSDL")
+		return
+	}
 
 	RespondJSON(w, http.StatusOK, map[string]string{
-		"message": "Đã đặt lại mật khẩu thành công về: " + req.NewPassword,
+		"message":      "Đã tạo mật khẩu tạm thời. Hãy gửi cho người dùng và yêu cầu họ đổi mật khẩu sau khi đăng nhập.",
+		"new_password": newPassword,
 	})
 }

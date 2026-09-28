@@ -70,12 +70,13 @@ export function UserManagementPage() {
   };
 
   const handleResetPassword = async (id, name) => {
-    const confirm = window.confirm(`Bạn có chắc muốn đặt lại mật khẩu cho ${name} về mặc định (123456)?`);
+    const confirm = window.confirm(`Đặt lại mật khẩu cho ${name}? Hệ thống sẽ tạo một mật khẩu tạm thời ngẫu nhiên.`);
     if (!confirm) return;
 
     try {
-      const res = await api.resetUserPassword(id, '123456');
-      alert(res.message);
+      const res = await api.resetUserPassword(id);
+      alert(`Mật khẩu tạm thời cho ${name}: ${res.new_password}\n\nHãy gửi cho người dùng — họ nên đổi mật khẩu ngay sau khi đăng nhập.`);
+      loadData();
     } catch (err) {
       alert(err.message || 'Lỗi reset mật khẩu');
     }
