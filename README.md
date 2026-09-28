@@ -168,12 +168,3 @@ IT_Support/
 ```
 
 ---
-
-## 📝 Ghi chú triển khai
-
-- Đây là sản phẩm portfolio chạy local. Đưa lên production cần thêm: HTTPS, rate-limit login, secret quản lý qua vault, CORS cấu hình theo domain thật.
-- Database file `helpdesk.db` và thư mục `uploads/` đã nằm trong `.gitignore` — không bao giờ commit dữ liệu người dùng.
-
-## License
-
-MIT
