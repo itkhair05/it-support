@@ -17,6 +17,10 @@ import (
 
 func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 	roleFilter := r.URL.Query().Get("role")
+	requesterRole := middleware.GetUserRole(r)
+	// The list powers the @mention menu for every user, but contact
+	// details are only exposed to IT staff and admins.
+	includeContact := requesterRole == "admin" || requesterRole == "it_support"
 
 	query := `
 		SELECT u.id, u.email, u.full_name, u.role, u.department_id, COALESCE(d.name, ''), u.status, u.avatar_url, u.created_at
@@ -44,6 +48,9 @@ func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 		rows.Scan(&u.ID, &u.Email, &u.FullName, &u.Role, &deptID, &u.DepartmentName, &u.Status, &u.AvatarURL, &u.CreatedAt)
 		if deptID.Valid {
 			u.DepartmentID = &deptID.Int64
+		}
+		if !includeContact {
+			u.Email = ""
 		}
 		users = append(users, u)
 	}
