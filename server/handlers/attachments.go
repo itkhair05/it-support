@@ -39,8 +39,14 @@ func UploadAttachmentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Hard cap the request body so oversized uploads are rejected early
+	r.Body = http.MaxBytesReader(w, r.Body, 20<<20)
+
 	// Parse multipart form (max 20MB)
-	r.ParseMultipartForm(20 << 20)
+	if err := r.ParseMultipartForm(20 << 20); err != nil {
+		RespondError(w, http.StatusBadRequest, "Tệp tải lên quá lớn (tối đa 20MB) hoặc dữ liệu không hợp lệ")
+		return
+	}
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
