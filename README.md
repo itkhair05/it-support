@@ -168,3 +168,7 @@ IT_Support/
 ```
 
 ---
+
+## Tác giả
+
+Được xây dựng bởi [Dương Thế Khải](https://github.com/itkhair05).
